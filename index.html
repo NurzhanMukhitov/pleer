@@ -14,14 +14,15 @@
       margin: 0;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
       min-height: 100dvh;
-      padding: 24px 16px;
+      padding: 8px 16px 40px; /* почти вплотную к верхней рамке, запас только снизу */
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       color: #fff;
       position: relative;
-      overflow: hidden;
+      overflow-x: hidden;
+      overflow-y: auto; /* если по высоте не влезет — аккуратный скролл вместо обрезания */
     }
 
     /* Размытый фон из обложки, как в Spotify */
@@ -150,7 +151,9 @@
     }
     .progress {
       width: 100%;
+      max-width: 360px;
       margin-top: 6px;
+      margin-inline: auto;
     }
     input[type="range"] {
       width: 100%;
@@ -174,15 +177,60 @@
       color: rgba(255,255,255,.9);
     }
 
+    /* Мобильный вид: всё в один экран, без скролла */
+    @media (max-width: 600px) {
+      body {
+        padding: 8px 14px 24px;
+        justify-content: space-between;
+        overflow-y: hidden;
+      }
+      .card {
+        padding: 12px 12px 14px;
+        gap: 8px;
+      }
+      h1 {
+        font-size: 18px;
+      }
+      .subtitle {
+        font-size: 13px;
+      }
+      .cover {
+        max-width: 310px;
+      }
+      .controls-main {
+        margin-top: 4px;
+        gap: 10px;
+      }
+      .btn-main {
+        width: 60px;
+        height: 60px;
+        font-size: 22px;
+      }
+      .row {
+        margin-top: 6px;
+      }
+      .progress {
+        max-width: 320px;
+        margin-top: 2px;
+      }
+      .time {
+        font-size: 11px;
+        margin-top: 4px;
+      }
+    }
+
+    /* Десктоп: более плотный фон карточки */
     @media (min-width: 1024px) {
       .card {
         background: rgba(10, 10, 10, .72);
       }
     }
 
+    /* В горизонтали на телефонах просим повернуть устройство */
     @media (max-width: 768px) and (orientation: landscape) {
       body {
         padding: 24px;
+        overflow-y: hidden;
       }
       .card {
         display: none;
@@ -213,9 +261,9 @@
     <audio id="audio" preload="metadata"></audio>
 
     <div class="row controls-main">
-      <button id="restartBtn" type="button" aria-label="Перемотать в начало" disabled>↺</button>
+      <button id="restartBtn" type="button" aria-label="Назад 30 секунд" disabled>-30s</button>
       <button id="playBtn" type="button" class="btn-main" aria-label="Воспроизвести" disabled>▶</button>
-      <button id="stopBtn" type="button" aria-label="Стоп" disabled>■</button>
+      <button id="stopBtn" type="button" aria-label="Вперёд 30 секунд" disabled>+30s</button>
     </div>
 
     <div class="progress">
@@ -297,16 +345,16 @@
       }
       updatePlayButton();
     });
-    restartBtn.addEventListener('click', async () => {
-      audio.currentTime = 0;
-      try { await audio.play(); } catch (e) {}
-      updatePlayButton();
+    restartBtn.addEventListener('click', () => {
+      if (!isFinite(audio.duration) || audio.duration <= 0) return;
+      const prev = audio.currentTime - 30;
+      audio.currentTime = prev < 0 ? 0 : prev;
     });
 
     stopBtn.addEventListener('click', () => {
-      audio.pause();
-      audio.currentTime = 0;
-      updatePlayButton();
+      if (!isFinite(audio.duration) || audio.duration <= 0) return;
+      const next = audio.currentTime + 30;
+      audio.currentTime = next > audio.duration ? audio.duration : next;
     });
 
     // Seek
