@@ -225,13 +225,6 @@
         <span id="dur">0:00</span>
       </div>
     </div>
-
-    <div class="row volume-row" style="margin-top: 18px; justify-content: space-between;">
-      <div style="display:flex; gap:10px; align-items:center; width: 100%;">
-        <label style="font-size:12px; opacity:.8; white-space:nowrap;">Громкость</label>
-        <input id="vol" type="range" min="0" max="1" step="0.01" value="1" style="flex:1;" />
-      </div>
-    </div>
   </main>
 
   <div class="rotate-hint">
@@ -246,7 +239,6 @@
     const seek = document.getElementById('seek');
     const cur = document.getElementById('cur');
     const dur = document.getElementById('dur');
-    const vol = document.getElementById('vol');
 
     function padTime(s) {
       if (!isFinite(s) || s < 0) return '0:00';
@@ -315,11 +307,6 @@
       audio.pause();
       audio.currentTime = 0;
       updatePlayButton();
-    });
-
-    // Volume
-    vol.addEventListener('input', () => {
-      audio.volume = Number(vol.value);
     });
 
     // Seek
