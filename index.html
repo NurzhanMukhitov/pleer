@@ -7,26 +7,56 @@
   <meta name="robots" content="noindex,nofollow" />
   <style>
     :root { color-scheme: dark; }
+    html {
+      height: 100%;
+    }
     body {
       margin: 0;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      min-height: 100svh;
+      min-height: 100dvh;
       padding: 24px 16px;
-      display: grid;
-      place-items: center;
-      background:
-        radial-gradient(circle at top left, #0f4b63 0, #01121d 55%, #000814 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
       color: #fff;
+      position: relative;
+      overflow: hidden;
     }
+
+    /* Размытый фон из обложки, как в Spotify */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image: url("apocalypse-cover.png");
+      background-size: cover;
+      background-position: center;
+      filter: blur(40px);
+      transform: scale(1.12);
+      opacity: .85;
+      z-index: -2;
+    }
+
+    /* Дополнительное затемнение/градиент поверх размытой обложки */
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(circle at top, rgba(0,0,0,.35), rgba(0,0,0,.92));
+      z-index: -1;
+    }
+
     .card {
       width: min(420px, 100%);
       border-radius: 28px;
       padding: 20px 20px 18px;
       box-shadow:
-        0 26px 60px rgba(0, 0, 0, .75),
+        0 26px 60px rgba(0, 0, 0, .8),
         0 0 0 1px rgba(255, 255, 255, .06);
-      background: linear-gradient(160deg, rgba(5, 32, 48, .96), rgba(2, 12, 22, .98));
-      backdrop-filter: blur(22px);
+      background: rgba(3, 11, 20, .75);
+      backdrop-filter: blur(20px);
       display: flex;
       flex-direction: column;
       align-items: stretch;
@@ -40,8 +70,8 @@
       box-shadow:
         0 24px 60px rgba(0, 0, 0, .9),
         0 0 0 1px rgba(255, 255, 255, .08);
-      object-fit: cover;
       display: block;
+      height: auto;
     }
     .title-block {
       margin-top: 4px;
@@ -118,16 +148,6 @@
       color: rgba(0,0,0,.4);
       box-shadow: none;
     }
-    .badge {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,.35);
-      font-size: 11px;
-      opacity: .85;
-      margin-left: 8px;
-      vertical-align: middle;
-    }
     .progress {
       width: 100%;
       margin-top: 6px;
@@ -143,16 +163,41 @@
       opacity: .8;
       margin-top: 6px;
     }
+
+    .rotate-hint {
+      display: none;
+      max-width: 320px;
+      margin: 0 auto;
+      text-align: center;
+      font-size: 14px;
+      line-height: 1.4;
+      color: rgba(255,255,255,.9);
+    }
+
+    @media (min-width: 1024px) {
+      .card {
+        background: rgba(10, 10, 10, .72);
+      }
+    }
+
+    @media (max-width: 768px) and (orientation: landscape) {
+      body {
+        padding: 24px;
+      }
+      .card {
+        display: none;
+      }
+      .rotate-hint {
+        display: block;
+      }
+    }
   </style>
 </head>
 <body>
   <main class="card">
     <img src="apocalypse-cover.png" alt="Apocalypse — Cigarettes After Sex" class="cover" />
     <div class="title-block">
-      <h1>
-        Apocalypse
-        <span id="autoplayBadge" class="badge" hidden>autoplay</span>
-      </h1>
+      <h1>Apocalypse</h1>
       <div class="subtitle">Cigarettes After Sex</div>
     </div>
 
@@ -181,13 +226,17 @@
       </div>
     </div>
 
-    <div class="row" style="margin-top: 18px; justify-content: space-between;">
+    <div class="row volume-row" style="margin-top: 18px; justify-content: space-between;">
       <div style="display:flex; gap:10px; align-items:center; width: 100%;">
         <label style="font-size:12px; opacity:.8; white-space:nowrap;">Громкость</label>
         <input id="vol" type="range" min="0" max="1" step="0.01" value="1" style="flex:1;" />
       </div>
     </div>
   </main>
+
+  <div class="rotate-hint">
+    Плеер доступен только в вертикальной ориентации экрана. Поверните устройство, чтобы продолжить прослушивание.
+  </div>
 
   <script>
     const audio = document.getElementById('audio');
@@ -198,7 +247,6 @@
     const cur = document.getElementById('cur');
     const dur = document.getElementById('dur');
     const vol = document.getElementById('vol');
-    const autoplayBadge = document.getElementById('autoplayBadge');
 
     function padTime(s) {
       if (!isFinite(s) || s < 0) return '0:00';
@@ -238,7 +286,8 @@
 
     if (src) {
       audio.src = src;
-      if (autoplay) autoplayBadge.hidden = false;
+      // autoplay оставляем только как параметр URL, но
+      // дальше не используем из-за ограничений мобильных браузеров
     } else {
       enableControls(false);
     }
