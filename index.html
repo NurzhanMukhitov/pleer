@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Audio Player</title>
+  <meta name="robots" content="noindex,nofollow" />
+  <style>
+    :root { color-scheme: dark; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      min-height: 100svh;
+      padding: 24px 16px;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(circle at top left, #0f4b63 0, #01121d 55%, #000814 100%);
+      color: #fff;
+    }
+    .card {
+      width: min(420px, 100%);
+      border-radius: 28px;
+      padding: 20px 20px 18px;
+      box-shadow:
+        0 26px 60px rgba(0, 0, 0, .75),
+        0 0 0 1px rgba(255, 255, 255, .06);
+      background: linear-gradient(160deg, rgba(5, 32, 48, .96), rgba(2, 12, 22, .98));
+      backdrop-filter: blur(22px);
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 16px;
+    }
+    .cover {
+      width: 100%;
+      max-width: 340px;
+      margin-inline: auto;
+      border-radius: 20px;
+      box-shadow:
+        0 24px 60px rgba(0, 0, 0, .9),
+        0 0 0 1px rgba(255, 255, 255, .08);
+      object-fit: cover;
+      display: block;
+    }
+    .title-block {
+      margin-top: 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      text-align: center;
+    }
+    h1 {
+      font-size: 20px;
+      margin: 0;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+    .subtitle {
+      font-size: 14px;
+      opacity: .8;
+    }
+    .row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 10px;
+    }
+    .controls-main {
+      justify-content: center;
+      margin-top: 8px;
+      gap: 18px;
+    }
+    button {
+      cursor: pointer;
+      border-radius: 999px;
+      padding: 10px 18px;
+      font-weight: 600;
+      min-width: 88px;
+      border: 1px solid rgba(255,255,255,.3);
+      background: rgba(255,255,255,.08);
+      color: #fff;
+      transition: transform .08s ease-out, box-shadow .08s ease-out, background .08s ease-out, border-color .08s ease-out, opacity .08s ease-out;
+    }
+    button:hover:not(:disabled) {
+      background: rgba(255,255,255,.16);
+      box-shadow: 0 8px 20px rgba(0,0,0,.45);
+      transform: translateY(-1px);
+      border-color: rgba(255,255,255,.6);
+    }
+    button:active:not(:disabled) {
+      transform: translateY(0);
+      box-shadow: 0 4px 10px rgba(0,0,0,.6);
+    }
+    button:disabled {
+      opacity: .5;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+    .btn-main {
+      width: 72px;
+      height: 72px;
+      min-width: 0;
+      padding: 0;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      border-width: 0;
+      background: #fff;
+      color: #052030;
+      box-shadow: 0 18px 40px rgba(0,0,0,.85);
+    }
+    .btn-main:disabled {
+      background: rgba(255,255,255,.7);
+      color: rgba(0,0,0,.4);
+      box-shadow: none;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.35);
+      font-size: 11px;
+      opacity: .85;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+    .progress {
+      width: 100%;
+      margin-top: 6px;
+    }
+    input[type="range"] {
+      width: 100%;
+    }
+    .time {
+      display: flex;
+      justify-content: space-between;
+      font-variant-numeric: tabular-nums;
+      font-size: 12px;
+      opacity: .8;
+      margin-top: 6px;
+    }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <img src="apocalypse-cover.png" alt="Apocalypse — Cigarettes After Sex" class="cover" />
+    <div class="title-block">
+      <h1>
+        Apocalypse
+        <span id="autoplayBadge" class="badge" hidden>autoplay</span>
+      </h1>
+      <div class="subtitle">Cigarettes After Sex</div>
+    </div>
+
+    <!--
+      ВАРИАНТ 1 (основной): ссылка на файл в URL:
+      https://ваш-домен/track.html?src=tracks/my-song.mp3&title=My%20Song&autoplay=1
+
+      ВАРИАНТ 2 (ручной): если src не указан — можно выбрать файл кнопкой ниже.
+      (Этот вариант НЕ подойдет, если человек откроет страницу с QR на другом телефоне —
+       он не увидит ваш локальный файл. Для QR нужен ВАРИАНТ 1, где трек доступен по URL.)
+    -->
+
+    <audio id="audio" preload="metadata"></audio>
+
+    <div class="row controls-main">
+      <button id="restartBtn" type="button" aria-label="Перемотать в начало" disabled>↺</button>
+      <button id="playBtn" type="button" class="btn-main" aria-label="Воспроизвести" disabled>▶</button>
+      <button id="stopBtn" type="button" aria-label="Стоп" disabled>■</button>
+    </div>
+
+    <div class="progress">
+      <input id="seek" type="range" min="0" max="1000" value="0" step="1" disabled />
+      <div class="time">
+        <span id="cur">0:00</span>
+        <span id="dur">0:00</span>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top: 18px; justify-content: space-between;">
+      <div style="display:flex; gap:10px; align-items:center; width: 100%;">
+        <label style="font-size:12px; opacity:.8; white-space:nowrap;">Громкость</label>
+        <input id="vol" type="range" min="0" max="1" step="0.01" value="1" style="flex:1;" />
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const audio = document.getElementById('audio');
+    const playBtn = document.getElementById('playBtn');
+    const restartBtn = document.getElementById('restartBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const seek = document.getElementById('seek');
+    const cur = document.getElementById('cur');
+    const dur = document.getElementById('dur');
+    const vol = document.getElementById('vol');
+    const autoplayBadge = document.getElementById('autoplayBadge');
+
+    function padTime(s) {
+      if (!isFinite(s) || s < 0) return '0:00';
+      const m = Math.floor(s / 60);
+      const r = Math.floor(s % 60);
+      return `${m}:${String(r).padStart(2, '0')}`;
+    }
+
+    function enableControls(enabled) {
+      playBtn.disabled = !enabled;
+      restartBtn.disabled = !enabled;
+      stopBtn.disabled = !enabled;
+      seek.disabled = !enabled;
+    }
+
+    function updatePlayButton() {
+      if (audio.paused || audio.ended) {
+        playBtn.textContent = '▶';
+        playBtn.setAttribute('aria-label', 'Воспроизвести');
+      } else {
+        playBtn.textContent = '❚❚';
+        playBtn.setAttribute('aria-label', 'Пауза');
+      }
+    }
+
+    function setTitle(t) {
+      if (t) document.title = t;
+    }
+
+    // Load from query params
+    const params = new URLSearchParams(location.search);
+    const src = params.get('src');
+    const title = params.get('title');
+    const autoplay = params.get('autoplay') === '1';
+
+    if (title) setTitle(title);
+
+    if (src) {
+      audio.src = src;
+      if (autoplay) autoplayBadge.hidden = false;
+    } else {
+      enableControls(false);
+    }
+
+    // Buttons
+    playBtn.addEventListener('click', async () => {
+      if (audio.paused || audio.ended) {
+        try {
+          await audio.play();
+        } catch (e) {
+          return;
+        }
+      } else {
+        audio.pause();
+      }
+      updatePlayButton();
+    });
+    restartBtn.addEventListener('click', async () => {
+      audio.currentTime = 0;
+      try { await audio.play(); } catch (e) {}
+      updatePlayButton();
+    });
+
+    stopBtn.addEventListener('click', () => {
+      audio.pause();
+      audio.currentTime = 0;
+      updatePlayButton();
+    });
+
+    // Volume
+    vol.addEventListener('input', () => {
+      audio.volume = Number(vol.value);
+    });
+
+    // Seek
+    let seeking = false;
+    seek.addEventListener('input', () => {
+      seeking = true;
+      const ratio = Number(seek.value) / Number(seek.max);
+      if (isFinite(audio.duration) && audio.duration > 0) {
+        cur.textContent = padTime(ratio * audio.duration);
+      }
+    });
+    seek.addEventListener('change', () => {
+      const ratio = Number(seek.value) / Number(seek.max);
+      if (isFinite(audio.duration) && audio.duration > 0) {
+        audio.currentTime = ratio * audio.duration;
+      }
+      seeking = false;
+    });
+
+    // Audio events
+    audio.addEventListener('loadedmetadata', () => {
+      dur.textContent = padTime(audio.duration);
+      cur.textContent = padTime(audio.currentTime);
+      enableControls(true);
+      updatePlayButton();
+    });
+
+    audio.addEventListener('timeupdate', () => {
+      if (!seeking && isFinite(audio.duration) && audio.duration > 0) {
+        const ratio = audio.currentTime / audio.duration;
+        seek.value = String(Math.round(ratio * Number(seek.max)));
+        cur.textContent = padTime(audio.currentTime);
+      }
+    });
+
+    audio.addEventListener('play', updatePlayButton);
+    audio.addEventListener('pause', updatePlayButton);
+    audio.addEventListener('ended', () => {
+      updatePlayButton();
+    });
+  </script>
+</body>
+</html>
